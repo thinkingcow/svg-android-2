@@ -242,7 +242,7 @@ public class SVGParser {
 	  public Builder replaceColors(Integer searchColor, Integer replaceColor) {
 	    this.searchColor = searchColor;
 	    this.replaceColor = replaceColor;
-	    Log.i(TAG, String.format("Replace: color 0x%x -> 0x%x", searchColor, replaceColor));
+	    // Log.i(TAG, String.format("Replace: color 0x%x -> 0x%x", searchColor, replaceColor));
 	    return this;
 	  }
 
@@ -311,7 +311,7 @@ public class SVGParser {
 	}
 
 	private static SVG parse(InputStream in, Integer searchColor, Integer replaceColor, boolean whiteMode, boolean ignoreDefs, float dpi) throws SVGParseException {
-	    Log.i(TAG, "parsing svg");
+	    // Log.i(TAG, "parsing svg");
 		SVGHandler svgHandler = null;
 		long start = System.currentTimeMillis();
 		try {
@@ -347,7 +347,7 @@ public class SVGParser {
 			}
 			return result;
 		} catch (Exception e) {
-		    Log.i(TAG, "Parse error: " + e);
+		    Log.w(TAG, "Parse error: " + e);
 			//for (String s : handler.parsed.toString().replace(">", ">\n").split("\n"))
 			//	Log.d(TAG, "Parsed: " + s);
 			throw new SVGParseException(e);
@@ -533,7 +533,7 @@ public class SVGParser {
 				matrix.preTranslate(-cx, -cy);
 			}
 		} else {
-			Log.i(TAG, "Invalid transform (" + s + ")");
+			Log.w(TAG, "Invalid transform (" + s + ")");
 		}
 		return matrix;
 	}
@@ -756,7 +756,7 @@ public class SVGParser {
 			    break;
 			}
 			default:
-				Log.d(TAG, "Invalid path command: " + cmd);
+				Log.w(TAG, "Invalid path command: " + cmd);
 				ph.advance();
 			}
 			if (!wasCurve) {
@@ -876,7 +876,7 @@ public class SVGParser {
 			try
 			{
 				int count = copy();
-				Log.i(TAG, "Copy: " + count);
+				// Log.i(TAG, "Copy: " + count);
 			}
 			catch(IOException ex)
 			{
@@ -1232,7 +1232,7 @@ public class SVGParser {
 						fillPaint.setShader(shader);
 						return true;
 					} else {
-						Log.d(TAG, "Didn't find shader, using black: " + id);
+						Log.w(TAG, "Didn't find shader, using black: " + id);
 						fillPaint.setShader(null);
 						doColor(atts, Color.BLACK, true, fillPaint);
 						return true;
@@ -1248,7 +1248,7 @@ public class SVGParser {
 						doColor(atts, color, true, fillPaint);
 						return true;
 					} else {
-						Log.d(TAG, "Unrecognized fill color, using black: " + fillString);
+						Log.w(TAG, "Unrecognized fill color, using black: " + fillString);
 						doColor(atts, Color.BLACK, true, fillPaint);
 						return true;
 					}
@@ -1512,7 +1512,7 @@ public class SVGParser {
 	    private void doBitmap(Canvas canvas, float x, float y, float width, float height, byte[] bytes) {
 	      Bitmap bm = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 	      if (bm != null) {
-		    Log.d(TAG, String.format("Image %f x %f %s", width, height, bm));
+		// Log.d(TAG, String.format("Image %f x %f %s", width, height, bm));
 	        bm.prepareToDraw();
 	        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
             RectF rect = new RectF(x, y, x+width, y+height);
@@ -1851,7 +1851,7 @@ public class SVGParser {
 
 		@Override
 		public void endElement(String namespaceURI, String localName, String qName) {
-			Log.d("TAG", "tag: " + localName);
+			// Log.d("TAG", "tag: " + localName);
 			/*parsed.append("</");
 			parsed.append(localName);
 			parsed.append(">");*/
@@ -1888,7 +1888,7 @@ public class SVGParser {
 						positions[i] = gradient.positions.get(i);
 					}
 					if (colors.length == 0) {
-						Log.d("BAD", "BAD");
+						Log.d(TAG, "missing colors in gradient");
 					}
 					LinearGradient g = new LinearGradient(gradient.x1, gradient.y1, gradient.x2, gradient.y2, colors, positions, Shader.TileMode.CLAMP);
 					if (gradient.matrix != null) {
