@@ -1148,6 +1148,9 @@ public class SVGParser {
 		Stack<Paint> fillPaintStack = new Stack<Paint>();
 		Stack<Boolean> fillSetStack = new Stack<Boolean>();
 
+		float groupOpacity = 1f;
+		Stack<Float> groupOpacityStack = new Stack<Float>();
+
 		// Scratch rect (so we aren't constantly making new ones)
 		RectF rect = new RectF();
 		RectF bounds = null;
@@ -1389,10 +1392,10 @@ public class SVGParser {
 				opacity = atts.getFloat(fillMode ? "fill-opacity" : "stroke-opacity");
 			}
 			if (opacity == null) {
-				paint.setAlpha(255); // XXX should we do this at all?
-			} else {
-				paint.setAlpha((int) (255 * opacity));
+				opacity = 1f;
 			}
+
+			paint.setAlpha((int) (255 * opacity * groupOpacity));
 		}
 
 		private int replaceColor(int color) {
@@ -1673,6 +1676,12 @@ public class SVGParser {
 				strokePaintStack.push(new Paint(strokePaint));
 				fillSetStack.push(fillSet);
 				strokeSetStack.push(strokeSet);
+				groupOpacityStack.push(groupOpacity);
+
+				Float opacity = getFloatAttr("opacity", atts);
+				if (opacity != null) {
+					groupOpacity = groupOpacity * opacity;
+				}
 
 				doText(atts, fillPaint);
 				doText(atts, strokePaint);
@@ -1940,6 +1949,7 @@ public class SVGParser {
 				fillSet = fillSetStack.pop();
 				strokePaint = strokePaintStack.pop();
 				strokeSet = strokeSetStack.pop();
+				groupOpacity = groupOpacityStack.pop();
 			}
 		}
 
