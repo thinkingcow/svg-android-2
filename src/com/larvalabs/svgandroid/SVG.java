@@ -102,10 +102,8 @@ public class SVG {
      */
     public Picture resizePicture(int height, int width){
         Picture newPicture = new Picture();
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        canvas = newPicture.beginRecording(width, height);
-        canvas.drawPicture(picture, new Rect(0,0,width,height));
+        Canvas canvas = newPicture.beginRecording(width, height);
+        canvas.drawPicture(picture, new Rect(0, 0, width, height));
         newPicture.endRecording();
         return newPicture;
     }
