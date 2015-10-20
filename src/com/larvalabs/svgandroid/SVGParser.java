@@ -49,6 +49,8 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Map;
 import java.util.Stack;
 import java.util.StringTokenizer;
 
@@ -77,7 +79,7 @@ import javax.xml.parsers.SAXParserFactory;
 /**
  * Entry point for parsing SVG files for Android.
  * Use one of the various static methods for parsing SVGs by resource, asset or input stream.
- * Optionally, a single color can be searched and replaced in the SVG while parsing.
+ * Optionally, a single or more colors can be searched and replaced in the SVG while parsing.
  * You can also parse an svg path directly.
  *
  * @see #getSVGFromResource(android.content.res.Resources, int)
@@ -99,17 +101,17 @@ public class SVGParser {
 	 * @throws SVGParseException if there is an error while parsing.
 	 */
 	public static SVG getSVGFromInputStream(InputStream svgData) throws SVGParseException {
-		return SVGParser.parse(svgData, 0, 0, false, false, DPI);
+		return SVGParser.parse(svgData, null, false, false, DPI);
 	}
 
-	/**
+    /**
 	 * Parse SVG data from a string.
 	 * @param svgData the string containing SVG XML data.
 	 * @return the parsed SVG.
 	 * @throws SVGParseException if there is an error while parsing.
 	 */
 	public static SVG getSVGFromString(String svgData) throws SVGParseException {
-		return SVGParser.parse(new ByteArrayInputStream(svgData.getBytes()), 0, 0, false, false, DPI);
+		return SVGParser.parse(new ByteArrayInputStream(svgData.getBytes()), null, false, false, DPI);
 	}
 
 	/**
@@ -120,7 +122,7 @@ public class SVGParser {
 	 * @throws SVGParseException if there is an error while parsing.
 	 */
 	public static SVG getSVGFromResource(Resources resources, int resId) throws SVGParseException {
-		return SVGParser.parse(resources.openRawResource(resId), 0, 0, false, false, DPI);
+		return SVGParser.parse(resources.openRawResource(resId), null, false, false, DPI);
 	}
 
 	/**
@@ -192,7 +194,57 @@ public class SVGParser {
 		return svg;
 	}
 
-	/**
+    /**
+     * Parse SVG data from an input stream, replacing a single color with another color.
+     * @param svgData the input stream, with SVG XML data in UTF-8 character encoding.
+     * @param replaceColors map of colors to be changed: key is to be changed with value.
+     * @return the parsed SVG.
+     * @throws SVGParseException if there is an error while parsing.
+     */
+    public static SVG getSVGFromInputStream(InputStream svgData, Map<Integer, Integer> replaceColors) throws SVGParseException {
+        return SVGParser.parse(svgData, replaceColors, false, false, DPI);
+    }
+
+    /**
+     * Parse SVG data from a string.
+     * @param svgData the string containing SVG XML data.
+     * @param replaceColors map of colors to be changed: key is to be changed with value.
+     * @return the parsed SVG.
+     * @throws SVGParseException if there is an error while parsing.
+     */
+    public static SVG getSVGFromString(String svgData, Map<Integer, Integer> replaceColors) throws SVGParseException {
+        return SVGParser.parse(new ByteArrayInputStream(svgData.getBytes()), replaceColors, false, false, DPI);
+    }
+
+    /**
+     * Parse SVG data from an Android application resource.
+     * @param resources the Android context
+     * @param resId the ID of the raw resource SVG.
+     * @param replaceColors map of colors to be changed: key is to be changed with value.
+     * @return the parsed SVG.
+     * @throws SVGParseException if there is an error while parsing.
+     */
+    public static SVG getSVGFromResource(Resources resources, int resId, Map<Integer, Integer> replaceColors) throws SVGParseException {
+        return SVGParser.parse(resources.openRawResource(resId), replaceColors, false, false, DPI);
+    }
+
+    /**
+     * Parse SVG data from an Android application asset.
+     * @param assetMngr the Android asset manager.
+     * @param svgPath the path to the SVG file in the application's assets.
+     * @param replaceColors map of colors to be changed: key is to be changed with value.
+     * @return the parsed SVG.
+     * @throws SVGParseException if there is an error while parsing.
+     * @throws IOException if there was a problem reading the file.
+     */
+    public static SVG getSVGFromAsset(AssetManager assetMngr, String svgPath, Map<Integer, Integer> replaceColors) throws SVGParseException, IOException {
+        InputStream inputStream = assetMngr.open(svgPath);
+        SVG svg = getSVGFromInputStream(inputStream, replaceColors);
+        inputStream.close();
+        return svg;
+    }
+
+    /**
 	 * Parses a single SVG path and returns it as a <code>android.graphics.Path</code> object.
 	 * An example path is <code>M250,150L150,350L350,350Z</code>, which draws a triangle.
 	 *
@@ -310,7 +362,13 @@ public class SVGParser {
 	  }
 	}
 
-	private static SVG parse(InputStream in, Integer searchColor, Integer replaceColor, boolean whiteMode, boolean ignoreDefs, float dpi) throws SVGParseException {
+        private static SVG parse(InputStream in, int searchColor, int replaceColor, boolean whiteMode, boolean ignoreDefs, float dpi) throws SVGParseException {
+            Map<Integer, Integer> swaps = new Hashtable<>(1);
+            swaps.put(searchColor, replaceColor);
+            return parse(in, swaps, whiteMode, ignoreDefs, dpi);
+        }
+
+        private static SVG parse(InputStream in, Map<Integer, Integer> replaceColors, boolean whiteMode, boolean ignoreDefs, float dpi) throws SVGParseException {
 	    // Log.i(TAG, "parsing svg");
 		SVGHandler svgHandler = null;
 		long start = System.currentTimeMillis();
@@ -320,7 +378,7 @@ public class SVGParser {
 			XMLReader xr = sp.getXMLReader();
 			final Picture picture = new Picture();
 			svgHandler = new SVGHandler(picture);
-			svgHandler.setColorSwap(searchColor, replaceColor);
+			svgHandler.setColorSwaps(replaceColors);
 			svgHandler.setWhiteMode(whiteMode);
 			svgHandler.setDpi(dpi);
 			if (ignoreDefs) {
@@ -1156,8 +1214,7 @@ public class SVGParser {
 		RectF bounds = null;
 		RectF limits = new RectF(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
 
-		Integer searchColor = null;
-		Integer replaceColor = null;
+		Map<Integer, Integer> replaceColors;
 
 		boolean whiteMode = false;
 
@@ -1190,10 +1247,9 @@ public class SVGParser {
         this.dpi = dpi;
     }
 
-    public void setColorSwap(Integer searchColor, Integer replaceColor) {
-			this.searchColor = searchColor;
-			this.replaceColor = replaceColor;
-		}
+    public void setColorSwaps(Map<Integer, Integer> swaps) {
+        this.replaceColors = swaps;
+    }
 
 		public void setWhiteMode(boolean whiteMode) {
 			this.whiteMode = whiteMode;
@@ -1401,8 +1457,9 @@ public class SVGParser {
 		private int replaceColor(int color) {
 			// Log.d(TAG, String.format("Replace color? 0x%x", color));
 		    color &= 0xFFFFFF;
-			if (searchColor != null && searchColor.intValue() == color && replaceColor != null) {
-			    Log.d(TAG, String.format("Replacing color: 0x%x->0x%x", color, replaceColor));
+			if (replaceColors != null && replaceColors.containsKey(color)) {
+				int replaceColor = replaceColors.get(color);
+				Log.d(TAG, String.format("Replacing color: 0x%x->0x%x", color, replaceColor));
 				return replaceColor;
 			} else {
 			  return color;
