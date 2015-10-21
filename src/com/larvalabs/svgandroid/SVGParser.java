@@ -274,8 +274,7 @@ public class SVGParser {
 
 	public static class Builder {
 	  private InputStream in;
-	  private Integer searchColor;
-	  private Integer replaceColor;
+	  private Map<Integer, Integer> replaceColors;
 	  private boolean whiteMode;
 	  private boolean ignoreDefs;
 	  private boolean shouldClose;
@@ -283,8 +282,7 @@ public class SVGParser {
 
 	  public Builder() {
 	    in = null;
-	    searchColor = null;
-	    replaceColor = null;
+	    replaceColors = null;
 	    whiteMode = false;
 	    ignoreDefs = false;
 	    dpi = DPI;
@@ -292,10 +290,15 @@ public class SVGParser {
 	  }
 
 	  public Builder replaceColors(Integer searchColor, Integer replaceColor) {
-	    this.searchColor = searchColor;
-	    this.replaceColor = replaceColor;
-	    // Log.i(TAG, String.format("Replace: color 0x%x -> 0x%x", searchColor, replaceColor));
-	    return this;
+	    Map<Integer, Integer> map = new Hashtable<>(1);
+	    map.put(searchColor, replaceColor);
+	    return replaceColors(map);
+	  }
+
+	  public Builder replaceColors(Map<Integer, Integer> replaceColors) {
+		this.replaceColors = replaceColors;
+		// Log.i(TAG, String.format("Replace: color 0x%x -> 0x%x", searchColor, replaceColor));
+		return this;
 	  }
 
 	  public Builder ignoreDefs(boolean ignoreDefs) {
@@ -349,7 +352,7 @@ public class SVGParser {
 	    if (in == null) {
 	      throw new IllegalStateException("No input SVG provided");
 	    }
-	    SVG result = parse(in, searchColor, replaceColor, whiteMode, ignoreDefs, dpi);
+	    SVG result = parse(in, replaceColors, whiteMode, ignoreDefs, dpi);
 	    if (shouldClose) {
   	      try {
             in.close();
